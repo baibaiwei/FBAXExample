@@ -8,11 +8,9 @@
 cmake_minimum_required (VERSION 2.6)
 set (CMAKE_BACKWARDS_COMPATIBILITY 2.6)
 
-include(${CMAKE_DIR}/common.cmake)
+project(${PLUGIN_NAME})
 
-set (PROJNAME ${PLUGIN_NAME})
-
-browserplugin_project(${PROJNAME})
+include_directories(${PLUGIN_INCLUDE_DIRS})
 
 file (GLOB GENERAL RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     [^.]*.cpp

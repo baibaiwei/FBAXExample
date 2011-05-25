@@ -1,9 +1,9 @@
 /**********************************************************\
 
-  Auto-generated axWrapper.cpp
+Auto-generated axWrapper.cpp
 
-  This file contains the auto-generated main plugin object
-  implementation for the axWrapper project
+This file contains the auto-generated main plugin object
+implementation for the axWrapper project
 
 \**********************************************************/
 
@@ -55,9 +55,6 @@ void axWrapper::StaticDeinitialize()
 ///////////////////////////////////////////////////////////////////////////////
 axWrapper::axWrapper() : m_axwin(this)
 {
-	// Enumerate the supported parameters
-	m_supportedParamSet.insert("caption");
-	m_supportedParamSet.insert("theme");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -90,8 +87,8 @@ FB::JSAPIPtr axWrapper::createJSAPI()
 {
     // m_host is the BrowserHost
     //return FB::JSAPIPtr(new axWrapperAPI(FB::ptr_cast<axWrapper>(shared_ptr()), m_host));
-    m_axwrapperapi = axWrapperAPIPtr(new axWrapperAPI(FB::ptr_cast<axWrapper>(shared_ptr()), m_host));
-	 return m_axwrapperapi;
+    m_axwrapperapi = boost::make_shared<axWrapperAPI>(FB::ptr_cast<axWrapper>(shared_from_this()), m_host);
+    return m_axwrapperapi;
 }
 
 bool axWrapper::onMouseDown(FB::MouseDownEvent *evt, FB::PluginWindow *)
@@ -113,89 +110,89 @@ bool axWrapper::onMouseMove(FB::MouseMoveEvent *evt, FB::PluginWindow *)
 }
 bool axWrapper::onWindowsMessage(FB::WindowsEvent *evt, FB::PluginWindowWin *piw)
 {
-	bool rc = false;
-	if(!m_axwin)
-		return false;
-	switch(evt->uMsg)
-	{
-		case WM_SIZE:
-			// resize the ActiveX container window
-			m_axwin.MoveWindow(0, 0, LOWORD(evt->lParam), HIWORD(evt->lParam));
-			evt->lRes = 0;
-			rc = true;
-			break;
-		case WM_MOUSEACTIVATE:
-			// activate on mouse click
-			evt->lRes = MA_ACTIVATE;
-			rc = true;
-			break;
-		case WM_SETFOCUS:
-			// forward focus to the ActiveX control container window
-			m_axwin.SetFocus();
-			evt->lRes = 0;
-			rc = true;
-			break;
-	}
-	return rc;
+    bool rc = false;
+    if(!m_axwin)
+        return false;
+    switch(evt->uMsg)
+    {
+    case WM_SIZE:
+        // resize the ActiveX container window
+        m_axwin.MoveWindow(0, 0, LOWORD(evt->lParam), HIWORD(evt->lParam));
+        evt->lRes = 0;
+        rc = true;
+        break;
+    case WM_MOUSEACTIVATE:
+        // activate on mouse click
+        evt->lRes = MA_ACTIVATE;
+        rc = true;
+        break;
+    case WM_SETFOCUS:
+        // forward focus to the ActiveX control container window
+        m_axwin.SetFocus();
+        evt->lRes = 0;
+        rc = true;
+        break;
+    }
+    return rc;
 }
 
 bool axWrapper::onWindowAttached(FB::AttachedEvent *evt, FB::PluginWindow *piw)
 {
     // The window is attached; act appropriately
 #ifdef WIN32
-	try {
+    try {
 
-		/* Now that we have the plugin window, create the ActiveX container
-		   window as a child of the plugin, then create the ActiveX control
-			as a child of the container.
-		*/
-		
-		FB::PluginWindowWin* pwnd = piw->get_as<FB::PluginWindowWin>();
-		if(pwnd != NULL)
-		{
-			HWND hWnd = pwnd->getHWND();
-			if(hWnd)
-			{				
-				// Create the ActiveX control container
-				RECT rc;
-				::GetClientRect(hWnd, &rc);
-				m_axwin.Create(hWnd, &rc, 0, WS_VISIBLE|WS_CHILD);
+        /* Now that we have the plugin window, create the ActiveX container
+        window as a child of the plugin, then create the ActiveX control
+        as a child of the container.
+        */
 
-				// Create an instance of the ActiveX control in the container. If the ActiveX
-				// control requires a license key, change CreateControlEx to CreateControlLicEx
-				// and add one more parameter - CComBSTR(AXCTLLICKEY) - to the argument list.
-				CComPtr<IUnknown> spControl;
-				HRESULT hr = m_axwin.CreateControlEx(AXCTLPROGID, NULL, NULL, &spControl, GUID_NULL, NULL);
-				if(SUCCEEDED(hr) && (spControl != NULL))
-				{
-					// Get the control's default interface
-					spControl.QueryInterface(&m_spaxctl);
-					if(m_spaxctl)
-					{
-						// Connect the event sink
-						hr = m_axwin.DispEventAdvise((IUnknown*)m_spaxctl);
+        FB::PluginWindowWin* pwnd = piw->get_as<FB::PluginWindowWin>();
+        if(pwnd != NULL)
+        {
+            HWND hWnd = pwnd->getHWND();
+            if(hWnd)
+            {				
+                // Create the ActiveX control container
+                RECT rc;
+                ::GetClientRect(hWnd, &rc);
+                m_axwin.Create(hWnd, &rc, 0, WS_VISIBLE|WS_CHILD);
 
-						// Get the initialization parameters
-						std::string caption;
-						int theme = 0;
+                // Create an instance of the ActiveX control in the container. If the ActiveX
+                // control requires a license key, change CreateControlEx to CreateControlLicEx
+                // and add one more parameter - CComBSTR(AXCTLLICKEY) - to the argument list.
+                CComPtr<IUnknown> spControl;
+                HRESULT hr = m_axwin.CreateControlEx(AXCTLPROGID, NULL, NULL, &spControl, GUID_NULL, NULL);
+                if(SUCCEEDED(hr) && (spControl != NULL))
+                {
+                    // Get the control's default interface
+                    spControl.QueryInterface(&m_spaxctl);
+                    if(m_spaxctl)
+                    {
+                        // Connect the event sink
+                        hr = m_axwin.DispEventAdvise((IUnknown*)m_spaxctl);
 
-						try {
-							caption = m_params["caption"].convert_cast<std::string>();
-						} catch(...) {} // ignore missing param
-						try {
-							theme = m_params["theme"].convert_cast<long>();
-						} catch(...) {} // ignore missing param
+                        // Get the initialization parameters
+                        std::string caption;
+                        int theme = 0;
 
-						// Set ActiveX control initial properties using initialization paramters
-						InitializeAxControl(caption, theme);
+                        try {
+                            caption = m_params["caption"].convert_cast<std::string>();
+                        } catch(...) {} // ignore missing param
+                        try {
+                            theme = m_params["theme"].convert_cast<long>();
+                        } catch(...) {} // ignore missing param
 
-					}
-				}
-			}
-		}
-	} catch(...) {
-		//TODO: should we throw a FB exception here?
-	}
+                        // Set ActiveX control initial properties using initialization paramters
+                        InitializeAxControl(caption, theme);
+
+                    }
+                }
+            }
+        }
+    } catch(...) {
+        //TODO: should we throw a FB exception here?
+    }
 #endif
 
     return false;
@@ -204,96 +201,96 @@ bool axWrapper::onWindowAttached(FB::AttachedEvent *evt, FB::PluginWindow *piw)
 bool axWrapper::onWindowDetached(FB::DetachedEvent *evt, FB::PluginWindow *)
 {
     // The window is about to be detached; act appropriately
-	if(m_spaxctl)
-	{
-		// Disconnect the event sink
-		m_axwin.DispEventUnadvise((IUnknown*)m_spaxctl);		
-		// Kill reference to the ActiveX control - when the plugin
-		// window is destroyed, the container & control will be
-		// automatically destroyed.
-		m_spaxctl = NULL;
-	}
+    if(m_spaxctl)
+    {
+        // Disconnect the event sink
+        m_axwin.DispEventUnadvise((IUnknown*)m_spaxctl);		
+        // Kill reference to the ActiveX control - when the plugin
+        // window is destroyed, the container & control will be
+        // automatically destroyed.
+        m_spaxctl = NULL;
+    }
     return false;
 }
 
 bool axWrapper::InitializeAxControl(const std::string& caption, int theme)
 {
-	set_Caption(caption);
-	set_Theme(theme);
-	return true;
+    set_Caption(caption);
+    set_Theme(theme);
+    return true;
 }
 
 std::string axWrapper::get_Caption()
 {
-	if(m_spaxctl)
-	{
-		try {
-			CComBSTR bstr;
-			HRESULT hr = m_spaxctl->get_Caption(&bstr);
-			if(SUCCEEDED(hr))
-				return FB::wstring_to_utf8(std::wstring(bstr.m_str, bstr.Length()));
-		}
-		catch(...) {
-		}
-	}
-	return std::string(); // punt
+    if(m_spaxctl)
+    {
+        try {
+            CComBSTR bstr;
+            HRESULT hr = m_spaxctl->get_Caption(&bstr);
+            if(SUCCEEDED(hr))
+                return FB::wstring_to_utf8(std::wstring(bstr.m_str, bstr.Length()));
+        }
+        catch(...) {
+        }
+    }
+    return std::string(); // punt
 }
 
 void axWrapper::set_Caption(const std::string& caption)
 {
-	if(m_spaxctl)
-	{
-		try {
-			HRESULT hr = m_spaxctl->put_Caption(CComBSTR(FB::utf8_to_wstring(caption).c_str()));
-		}
-		catch(...) {
-		}
-	}
+    if(m_spaxctl)
+    {
+        try {
+            HRESULT hr = m_spaxctl->put_Caption(CComBSTR(FB::utf8_to_wstring(caption).c_str()));
+        }
+        catch(...) {
+        }
+    }
 }
 
 int axWrapper::get_Theme()
 {
-	if(m_spaxctl)
-	{
-		try {
-			ThemeConstants theme;
-			HRESULT hr = m_spaxctl->get_Theme(&theme);
-			if(SUCCEEDED(hr))
-				return (int)theme;
-		}
-		catch(...) {
-		}
-	}
-	return 0; // punt
+    if(m_spaxctl)
+    {
+        try {
+            ThemeConstants theme;
+            HRESULT hr = m_spaxctl->get_Theme(&theme);
+            if(SUCCEEDED(hr))
+                return (int)theme;
+        }
+        catch(...) {
+        }
+    }
+    return 0; // punt
 }
 
 void axWrapper::FireClick(int duration)
 {
-	if(m_spaxctl)
-	{
-		try {
-			HRESULT hr = m_spaxctl->FireClick(duration);
-		}
-		catch(...) {
-		}
-	}
+    if(m_spaxctl)
+    {
+        try {
+            HRESULT hr = m_spaxctl->FireClick(duration);
+        }
+        catch(...) {
+        }
+    }
 }
 
 void axWrapper::set_Theme(int theme)
 {
-	if(m_spaxctl)
-	{
-		try {
-			HRESULT hr = m_spaxctl->put_Theme(static_cast<ThemeConstants>(theme));
-		}
-		catch(...) {
-		}
-	}
+    if(m_spaxctl)
+    {
+        try {
+            HRESULT hr = m_spaxctl->put_Theme(static_cast<ThemeConstants>(theme));
+        }
+        catch(...) {
+        }
+    }
 }
 
 /**********************************************************\
 
-  implementation for the ActiveX control container class
+implementation for the ActiveX control container class
 
 \**********************************************************/
 
@@ -301,24 +298,24 @@ void axWrapper::set_Theme(int theme)
 
 void __stdcall axWrapperAxWin::onKeyPress(short* pKey)
 {
-	if(pKey)
-	{
-		try {
-			m_pPlugin->getJSAPI()->FireEvent("onkeypress", FB::variant_list_of(*pKey));
-		}
-		catch(...)
-		{
-		}
-	}
+    if(pKey)
+    {
+        try {
+            m_pPlugin->getJSAPI()->FireEvent("onkeypress", FB::variant_list_of(*pKey));
+        }
+        catch(...)
+        {
+        }
+    }
 }
 
 void __stdcall axWrapperAxWin::onClick()
 {
-	try {
-		m_pPlugin->getJSAPI()->FireEvent("onclick", FB::VariantList());
-	}
-	catch(...)
-	{
-	}
+    try {
+        m_pPlugin->getJSAPI()->FireEvent("onclick", FB::VariantList());
+    }
+    catch(...)
+    {
+    }
 }
 
